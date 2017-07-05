@@ -13,20 +13,20 @@ yarn add nodejs-tail
 const Tail = require('nodejs-tail');
 
 const filename = 'some.log';
-const watcher = new Tail(filename);
+const tail = new Tail(filename);
 
-watcher.on('line', (line) => {
+tail.on('line', (line) => {
   process.stdout.write(line);
 })
 
-watcher.on('close', () => {
+tail.on('close', () => {
   console.log('watching stopped');
 })
 
-watcher.watch();
+tail.watch();
 
 setTimeout(() => {
-  watcher.close();
+  tail.close();
 }, 3000);
 ```
 

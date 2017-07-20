@@ -6,7 +6,6 @@ const Tail = require('..');
 
 const filename = path.join(__dirname, 'test.log');
 
-
 function before() {
   if (fs.existsSync(filename)) {
     fs.unlinkSync(filename);
@@ -21,15 +20,24 @@ function after() {
 }
 
 function startTail(tail) {
+
+  const assertData = [
+    'Line #1',
+    'Line #2',
+    'Line #3',
+    'Line #4',
+    'Line #5'
+  ];
   return new Promise((resolve, reject) => {
     let counter = 0;
     let closeCalled = false;
-    console.log(111);
     tail.on('line', (line) => {
-      process.stdout.write(line);
+      assert.equal(assertData[counter], line);
+      process.stdout.write(`\nLine recieved:\n${line}\n`);
       counter += 1;
     });
     tail.on('close', () => {
+      assert.equal(5, counter); 
       closeCalled = true;
       resolve({ counter, closeCalled });
     });
@@ -41,45 +49,37 @@ before();
 
 if (cluster.isMaster) {
   const tail = new Tail(filename);
-  let counter = 0;
-  let closeCalled = false;
-  console.log(111);
-  tail.on('line', (line) => {
-    console.log(line);
-    counter += 1;
-  });
-  tail.on('close', () => {
-    closeCalled = true;
-  });
-  tail.watch();
-  // startTail(tail).then((data) => {
-  //   // assert
-  //   assert.ok(data.closeCalled);
-  // }, () => { console.log('er'); });
-  
+  startTail(tail).then((data) => {
+    // assert
+    assert.ok(data.closeCalled);
+  }, () => { console.log('er'); });
+
   // start log emulation in separate process
-  // cluster.fork();
+  cluster.fork();
   cluster.on('exit', (worker, code, signal) => {
-    console.log(`worker ${worker.process.pid} died`);
-    // tail.close();
+    assert.equal(0, code);
+    tail.close();
   });
 
-} else if (cluster.isWorker) {
-  // emulate logger 
+} else {
+  // emulate logger
+  const TIMEOUT = 1000;
   const testData = [
-    'First line\n',
-    'Second line\n',
-    'Third line\n',
-    'Fourth line\nFifth line\n'
+    'Line #1\n',
+    'Line #2\n',
+    'Line #3\n',
+    'Line #4\nLine #5\n'
   ];
 
   testData.forEach((item, idx, ar) => {
     setTimeout(() => {
       fs.appendFileSync(filename, item);
-      process.stdout.write('f: ' + item);
+      process.stdout.write(`\nWrite to log:\n${item}`);
       if (idx + 1 === ar.length) {
-        cluster.worker.kill();
+        setTimeout(() => {
+          cluster.worker.kill()
+        }, TIMEOUT);
       }
-    }, 1000 * (idx + 1));
+    }, TIMEOUT * (idx + 1));
   });
 }

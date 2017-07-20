@@ -1,48 +1,76 @@
+const chokidar = require('chokidar');
 const EventEmitter = require('events');
 const fs = require('fs');
+const os = require('os');
 
 const watcher = Symbol('watcher');
+const fd = Symbol('fd');
+
+function closeFile() {
+  if (this[td]) {
+    fs.close(this[fd], (err) => {
+      if (err) {
+        return;
+      }
+      this[td] = undefined;
+    });
+  }
+}
 
 class Tail extends EventEmitter {
 
   constructor(filename, options) {
     super();
-    if (!fs.existsSync(filename)) {
-      throw new Error(`File ${filename} not found`);
-    }
     this.filename = filename;
-    this.options = Object.assign({
+    this.options = Object.assign(options || {}, {
+      alwaysStat: true,
+      ignoreInitial: false,
       persistent: true,
-      recursive: false,
-      encoding: 'utf8'
-    }, options);
+    });
+    this[watcher] = undefined;
+    this[fd] = undefined;
   }
 
   watch() {
-    let { size: lastSize, mtime: lastTime } = fs.statSync(this.filename);
-    this[watcher] = fs.watch(this.filename, this.options, (event) => {
-      const { size, mtime } = fs.statSync(this.filename);
-      const diff = size - lastSize;
-      if (diff <= 0) {
-        lastSize = size;
-        lastTime = mtime;
-        return;
-      }
-      const buffer = new Buffer(diff);
-      const fd = fs.openSync(this.filename, 'r');
-      fs.readSync(fd, buffer, 0, diff, lastSize);
-      fs.closeSync(fd);
-      lastSize = size;
-      lastTime = mtime;
-      buffer.toString().split('\\n').forEach((line) => {
-        this.emit('line', line);
+    let lastSize = 0;
+
+    this[watcher] = chokidar.watch(this.filename, this.options)
+      .on('add', (path, stats) => {
+        lastSize = stats.size;
+      })
+      .on('change', (path, stats) => {
+        const diff = stats.size - lastSize;
+        if (diff <= 0) {
+          lastSize = stats.size;
+          return;
+        }
+        const buffer = new Buffer(diff);
+        this[fd] = fs.openSync(path, 'r');
+        fs.read(this[fd], buffer, 0, diff, lastSize, (err) => {
+          if (err) {
+            return;
+          }
+          fs.closeSync(this[fd]);
+          buffer.toString().split(os.EOL).forEach((line, idx, ar) => {
+            if (idx < ar.length && line) {
+              this.emit('line', line);
+            }
+          });
+          
+        });
+        lastSize = stats.size;
+      })
+      .on('unlink', () => {
+        lastSize = 0;
+        closeFile.bind(this);
       });
-    });
   }
 
   close() {
     if (this[watcher]) {
+      this[watcher].unwatch(this.filename);
       this[watcher].close();
+      this[watcher] = undefined;
     }
     this.emit('close');
   }

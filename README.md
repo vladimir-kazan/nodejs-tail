@@ -1,13 +1,24 @@
 # nodejs-tail
 
-Shortest NodeJs implementation of tail command without dependencies.
+Simple NodeJs implementation of tail command.
 ## Install
 
 ```js
 yarn add nodejs-tail
 ```
 
-## How to use
+## Syntax
+
+`new Tail(filename, options)`
+
+- _filename_ - file to watch
+- _options_ - [chokidar](https://github.com/paulmillr/chokidar) watcher options, with hard coded next values: `{
+      alwaysStat: true,
+      ignoreInitial: false,
+      persistent: true,
+    }`
+
+## Example
 
 ```js
 const Tail = require('nodejs-tail');

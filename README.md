@@ -3,7 +3,7 @@
 Simple NodeJs implementation of tail command.
 ## Install
 
-```js
+```bash
 yarn add nodejs-tail
 ```
 

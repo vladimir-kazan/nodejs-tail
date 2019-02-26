@@ -44,7 +44,7 @@ class Tail extends EventEmitter {
           lastSize = stats.size;
           return;
         }
-        const buffer = new Buffer(diff);
+        const buffer = Buffer.alloc(diff);
         this[fd] = fs.openSync(path, 'r');
         fs.read(this[fd], buffer, 0, diff, lastSize, (err) => {
           if (err) {

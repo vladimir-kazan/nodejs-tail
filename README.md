@@ -12,11 +12,11 @@ yarn add nodejs-tail
 `new Tail(filename, options)`
 
 - _filename_ - file to watch
-- _options_ - [chokidar](https://github.com/paulmillr/chokidar) watcher options, with hard coded next values: `{
+- _options_ - [chokidar](https://github.com/paulmillr/chokidar) watcher options, with next values **always everwritten**: `{
       alwaysStat: true,
       ignoreInitial: false,
       persistent: true,
-    }`
+    }`. That is required to work similar to `tail` command.
 
 ## Example
 

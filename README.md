@@ -42,4 +42,4 @@ setTimeout(() => {
 ```
 
 
-MIT License. Copyright (c) 2017 Vladimir Kuznetsov
+MIT License. Copyright (c) 2017-2020 Vladimir Kuznetsov

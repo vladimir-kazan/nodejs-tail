@@ -23,6 +23,6 @@
   },
   "homepage": "https://github.com/vladimir-kazan/nodejs-tail#readme",
   "dependencies": {
-    "chokidar": "2.1.2"
+    "chokidar": "3.4.3"
   }
 }
